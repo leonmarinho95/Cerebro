@@ -13,6 +13,7 @@ import { onAuth, signIn, signOutUser, ensureUserDoc } from "./auth.js";
 import { registerRoute, setContext, startRouter, navigate } from "./router.js";
 import { icons } from "./lib/icons.js";
 import { formatHeaderDate } from "./lib/dates.js";
+import { renderRoutines } from "./modules/routines.js";
 
 const appEl = document.getElementById("app");
 
@@ -100,7 +101,7 @@ function registerRoutes() {
   });
   registerRoute("/rotinas", {
     title: "Rotinas",
-    render: placeholder("Rotinas", "Em breve: rotinas com frequência configurável."),
+    render: renderRoutines,
   });
   registerRoute("/tarefas", {
     title: "Tarefas",
