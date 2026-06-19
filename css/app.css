@@ -1,0 +1,220 @@
+/* app.css — Segundo Cérebro / SO Pessoal
+   Direção visual: "painel de controle calmo". Fundo escuro azulado para uso
+   confortável de manhã e à noite. O acento âmbar marca o que vence hoje; o
+   vermelho contido, o atrasado. A cor é informação de estado, não decoração. */
+
+/* ---------- Tokens ---------- */
+:root {
+  /* Superfícies (azulado-escuro, não preto puro — menos fadiga) */
+  --bg:        #0f141b;
+  --surface-1: #161d27;
+  --surface-2: #1e2733;
+  --surface-3: #27323f;
+  --border:    #2c3744;
+
+  /* Texto */
+  --text:      #e6ecf2;
+  --text-soft: #a3b0bf;
+  --text-mute: #6b7888;
+
+  /* Estados (semânticos) */
+  --due:       #f0a830; /* vence hoje — âmbar */
+  --due-soft:  #3a2f1a;
+  --late:      #e0604d; /* atrasado — vermelho contido */
+  --late-soft: #36211e;
+  --done:      #4fb286; /* concluído — verde discreto */
+  --soon:      #5a9bd4; /* próximos dias — azul */
+
+  --accent:    #f0a830;
+
+  /* Tipografia */
+  --font-display: "Archivo", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, -apple-system, sans-serif;
+
+  /* Métrica */
+  --radius: 12px;
+  --radius-sm: 8px;
+  --gap: 12px;
+  --bottombar-h: 64px;
+  --maxw: 640px;
+}
+
+/* ---------- Reset ---------- */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body { height: 100%; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
+}
+
+button { font: inherit; color: inherit; cursor: pointer; background: none; border: none; }
+input, textarea, select { font: inherit; color: inherit; }
+ul, ol { list-style: none; }
+
+/* ---------- App shell ---------- */
+#app {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px 10px;
+  background: linear-gradient(var(--bg) 70%, transparent);
+  backdrop-filter: blur(6px);
+}
+.topbar h1 {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.topbar .topbar-date {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-soft);
+}
+.icon-btn {
+  width: 40px; height: 40px;
+  display: grid; place-items: center;
+  border-radius: 10px;
+  color: var(--text-soft);
+}
+.icon-btn:hover { background: var(--surface-2); color: var(--text); }
+
+/* Área de telas */
+.view {
+  flex: 1;
+  padding: 4px 16px calc(var(--bottombar-h) + 28px);
+}
+
+/* ---------- Barra inferior ---------- */
+.bottombar {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 0;
+  width: 100%;
+  max-width: var(--maxw);
+  height: calc(var(--bottombar-h) + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  display: flex;
+  align-items: stretch;
+  background: var(--surface-1);
+  border-top: 1px solid var(--border);
+  z-index: 20;
+}
+.tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  color: var(--text-mute);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+.tab svg { width: 22px; height: 22px; }
+.tab.active { color: var(--accent); }
+.tab:not(.capture):active { transform: scale(0.94); }
+
+/* Botão central de captura */
+.tab.capture {
+  flex: 0 0 64px;
+  position: relative;
+}
+.capture-btn {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #14202b;
+  display: grid; place-items: center;
+  box-shadow: 0 6px 18px rgba(240, 168, 48, 0.35);
+}
+.capture-btn svg { width: 28px; height: 28px; }
+.capture-btn:active { transform: translateX(-50%) scale(0.92); }
+
+/* ---------- Utilitários de bloco ---------- */
+.section-title {
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-mute);
+  margin: 22px 2px 10px;
+}
+.card {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+}
+.empty {
+  color: var(--text-mute);
+  font-size: 0.9rem;
+  padding: 18px 2px;
+  text-align: center;
+}
+
+/* ---------- Auth gate ---------- */
+.auth-screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  padding: 40px;
+  text-align: center;
+}
+.auth-logo {
+  font-family: var(--font-display);
+  font-size: 2.2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.auth-logo span { color: var(--accent); }
+.auth-tagline { color: var(--text-soft); max-width: 30ch; }
+.btn-primary {
+  background: var(--accent);
+  color: #14202b;
+  font-weight: 700;
+  padding: 13px 22px;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.btn-primary:active { transform: scale(0.97); }
+
+/* ---------- Acessibilidade ---------- */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
