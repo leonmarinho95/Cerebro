@@ -14,6 +14,8 @@ import { registerRoute, setContext, startRouter, navigate } from "./router.js";
 import { icons } from "./lib/icons.js";
 import { formatHeaderDate } from "./lib/dates.js";
 import { renderRoutines } from "./modules/routines.js";
+import { renderTasks } from "./modules/tasks.js";
+import { openCapture } from "./modules/capture.js";
 
 const appEl = document.getElementById("app");
 
@@ -72,9 +74,9 @@ function renderShell(ctx) {
     tab.addEventListener("click", () => navigate(tab.dataset.route));
   });
 
-  // Captura rápida — placeholder até a fatia da Captura
+  // Captura rápida — cria uma tarefa por padrão
   document.getElementById("btn-capture").addEventListener("click", () => {
-    console.info("Captura rápida: a implementar (cria tarefa por padrão).");
+    openCapture(ctx.uid);
   });
 
   // Busca — reservada para a Fase 2
@@ -105,7 +107,7 @@ function registerRoutes() {
   });
   registerRoute("/tarefas", {
     title: "Tarefas",
-    render: placeholder("Tarefas", "Em breve: tarefas pontuais, com ou sem data."),
+    render: renderTasks,
   });
   registerRoute("/mais", {
     title: "Mais",

@@ -416,3 +416,70 @@ ul, ol { list-style: none; }
   z-index: 200;
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ============================================================
+   Tarefas + chips
+   ============================================================ */
+.task-row {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-left-width: 3px;
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  margin-bottom: 8px;
+}
+.task-row.state-overdue  { border-left-color: var(--late); }
+.task-row.state-today    { border-left-color: var(--due); }
+.task-row.state-upcoming { border-left-color: var(--soon); }
+.task-row.state-nodate   { border-left-color: var(--border); }
+.task-row.is-done        { border-left-color: var(--done); opacity: 0.65; }
+
+.task-check {
+  flex: 0 0 24px; width: 24px; height: 24px;
+  border-radius: 6px;
+  border: 2px solid var(--text-mute);
+  display: grid; place-items: center;
+  color: var(--text-mute);
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.task-check svg { width: 14px; height: 14px; stroke-width: 3; }
+.task-check:not(.checked):hover { border-color: var(--done); color: var(--done); }
+.task-check.checked { background: var(--done); border-color: var(--done); color: #14202b; }
+.task-check:active { transform: scale(0.9); }
+
+.task-main { flex: 1; min-width: 0; cursor: pointer; }
+.task-title { font-weight: 500; font-size: 0.98rem; word-break: break-word; }
+.task-row.is-done .task-title { text-decoration: line-through; color: var(--text-soft); }
+.task-meta { margin-top: 3px; }
+.task-badge { font-size: 0.78rem; font-weight: 600; }
+.task-badge.state-overdue { color: var(--late); }
+.task-badge.state-today   { color: var(--due); }
+.task-badge.state-upcoming{ color: var(--soon); }
+
+.task-snooze {
+  flex: 0 0 34px; width: 34px; height: 34px;
+  border-radius: 8px;
+  display: grid; place-items: center;
+  color: var(--text-mute);
+}
+.task-snooze svg { width: 18px; height: 18px; }
+.task-snooze:hover { background: var(--surface-2); color: var(--text-soft); }
+.task-snooze:active { transform: scale(0.9); }
+
+/* Chips (seletor rápido de data / vencimento) */
+.chip-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-soft);
+  font-size: 0.85rem; font-weight: 600;
+  padding: 7px 13px; border-radius: 999px;
+}
+.chip.sel { background: var(--accent); color: #14202b; border-color: var(--accent); }
+.chip:active { transform: scale(0.96); }
+
+.cap-hint { color: var(--text-mute); font-size: 0.82rem; align-self: center; }
+
+/* Campo de data adota o tema escuro */
+input[type="date"] { color-scheme: dark; }
