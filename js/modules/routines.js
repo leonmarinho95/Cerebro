@@ -93,8 +93,8 @@ function routineRow(r, today) {
 
   return `
     <div class="routine-row state-${stateClass}" data-id="${r.id}">
-      <button class="routine-check ${doneToday ? "checked" : ""}" aria-label="Marcar feita">
-        ${doneToday ? icons.checkSmall : ""}
+      <button class="routine-check ${doneToday ? "checked" : ""}" aria-label="${doneToday ? "Feita hoje — tocar para desfazer" : "Marcar como feita"}">
+        ${icons.checkSmall}
       </button>
       <div class="routine-main">
         <div class="routine-name">${escapeHtml(r.name)}</div>

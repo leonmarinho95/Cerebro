@@ -265,10 +265,13 @@ ul, ol { list-style: none; }
   border: 2px solid var(--text-mute);
   display: grid; place-items: center;
   color: #14202b;
-  transition: background 0.15s, border-color 0.15s;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
-.routine-check svg { width: 16px; height: 16px; stroke-width: 3; }
-.routine-check.checked { background: var(--done); border-color: var(--done); }
+.routine-check svg { width: 15px; height: 15px; stroke-width: 3; }
+/* Não marcado: check apenas insinuado, sinalizando que é tocável */
+.routine-check:not(.checked) { color: var(--text-mute); }
+.routine-check:not(.checked):hover { border-color: var(--done); color: var(--done); }
+.routine-check.checked { background: var(--done); border-color: var(--done); color: #14202b; }
 .routine-check:active { transform: scale(0.9); }
 
 .routine-main { flex: 1; min-width: 0; cursor: pointer; }
