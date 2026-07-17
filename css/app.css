@@ -483,3 +483,53 @@ ul, ol { list-style: none; }
 
 /* Campo de data adota o tema escuro */
 input[type="date"] { color-scheme: dark; }
+
+/* ============================================================
+   Dashboard "Hoje"
+   ============================================================ */
+.dash-summary {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--due);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin: 8px 0 4px;
+}
+.dash-summary.clear {
+  border-left-color: var(--done);
+  color: var(--text-soft);
+}
+.dash-empty {
+  color: var(--text-mute);
+  font-size: 0.9rem;
+  padding: 10px 2px 4px;
+}
+
+/* Bloco "Próximos dias" */
+.soon-card {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.soon-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.9rem;
+}
+.soon-item:last-child { border-bottom: none; }
+.soon-icon { display: grid; place-items: center; color: var(--text-mute); flex: 0 0 18px; }
+.soon-icon svg { width: 16px; height: 16px; }
+.soon-name {
+  flex: 1; min-width: 0; color: var(--text-soft);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.soon-when {
+  color: var(--soon); font-weight: 600; font-size: 0.8rem;
+  white-space: nowrap;
+}

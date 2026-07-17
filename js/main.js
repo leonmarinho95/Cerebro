@@ -16,6 +16,7 @@ import { formatHeaderDate } from "./lib/dates.js";
 import { renderRoutines } from "./modules/routines.js";
 import { renderTasks } from "./modules/tasks.js";
 import { openCapture } from "./modules/capture.js";
+import { renderDashboard } from "./modules/dashboard.js";
 
 const appEl = document.getElementById("app");
 
@@ -99,7 +100,7 @@ function placeholder(label, note) {
 function registerRoutes() {
   registerRoute("/hoje", {
     title: "Hoje",
-    render: placeholder("Dashboard “Hoje”", "Em breve: rotinas e tarefas do dia, próximos vencimentos e projetos ativos."),
+    render: renderDashboard,
   });
   registerRoute("/rotinas", {
     title: "Rotinas",
