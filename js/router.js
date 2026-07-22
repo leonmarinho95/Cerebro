@@ -53,9 +53,12 @@ async function renderCurrent() {
   view.innerHTML = "";
   if (titleEl && config.title) titleEl.textContent = config.title;
 
-  // Atualiza estado ativo das abas
+  // Atualiza estado ativo das abas. Rotas sem aba própria (ex.: /projetos)
+  // mantêm "Mais" destacada.
+  const MORE_CHILDREN = ["/projetos", "/conhecimento"];
+  const activeTab = MORE_CHILDREN.includes(path) ? "/mais" : path;
   document.querySelectorAll(".tab[data-route]").forEach((tab) => {
-    tab.classList.toggle("active", tab.dataset.route === path);
+    tab.classList.toggle("active", tab.dataset.route === activeTab);
   });
 
   const cleanup = await config.render(view, appCtx);

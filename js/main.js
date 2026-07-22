@@ -17,6 +17,8 @@ import { renderRoutines } from "./modules/routines.js";
 import { renderTasks } from "./modules/tasks.js";
 import { openCapture } from "./modules/capture.js";
 import { renderDashboard } from "./modules/dashboard.js";
+import { renderProjects } from "./modules/projects.js";
+import { renderMore } from "./modules/more.js";
 
 const appEl = document.getElementById("app");
 
@@ -112,7 +114,11 @@ function registerRoutes() {
   });
   registerRoute("/mais", {
     title: "Mais",
-    render: placeholder("Mais", "Em breve: Projetos e Conhecimento."),
+    render: renderMore,
+  });
+  registerRoute("/projetos", {
+    title: "Projetos",
+    render: renderProjects,
   });
 }
 

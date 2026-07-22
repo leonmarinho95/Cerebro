@@ -533,3 +533,99 @@ input[type="date"] { color-scheme: dark; }
   color: var(--soon); font-weight: 600; font-size: 0.8rem;
   white-space: nowrap;
 }
+
+/* ============================================================
+   Projetos
+   ============================================================ */
+.proj-row {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 13px 14px;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+.proj-row.is-done { opacity: 0.65; }
+.proj-color { flex: 0 0 10px; width: 10px; height: 10px; border-radius: 3px; }
+.proj-main { flex: 1; min-width: 0; }
+.proj-name {
+  font-weight: 600; font-size: 0.98rem;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.proj-progress { display: flex; align-items: center; gap: 10px; margin-top: 7px; }
+.proj-count { font-size: 0.78rem; color: var(--text-mute); font-variant-numeric: tabular-nums; }
+
+/* Barra de progresso */
+.bar {
+  flex: 1; height: 6px; border-radius: 999px;
+  background: var(--surface-3); overflow: hidden;
+}
+.bar-sm { height: 5px; }
+.bar-fill { height: 100%; border-radius: 999px; transition: width 0.3s ease; }
+
+/* Detalhe do projeto */
+.detail-desc { color: var(--text-soft); font-size: 0.92rem; margin: 2px 0 12px; }
+.detail-progress { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.detail-pct { font-size: 0.82rem; color: var(--text-soft); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.pd-tasks-head { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; }
+.btn-add.sm { padding: 6px 10px; font-size: 0.8rem; }
+.btn-add.sm svg { width: 14px; height: 14px; }
+
+.pd-task {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--surface-2);
+  border-radius: 8px; padding: 9px 12px; margin-bottom: 6px;
+}
+.pd-task.is-done { opacity: 0.6; }
+.pd-task .task-check { flex: 0 0 22px; width: 22px; height: 22px; }
+.pd-task-title { flex: 1; min-width: 0; font-size: 0.92rem; word-break: break-word; }
+.pd-task.is-done .pd-task-title { text-decoration: line-through; color: var(--text-soft); }
+
+/* Bloco de projetos no Dashboard */
+.dash-projects {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.dash-proj {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 14px; border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+.dash-proj:last-child { border-bottom: none; }
+.dash-proj-name {
+  flex: 0 0 auto; max-width: 40%; font-size: 0.9rem; font-weight: 500;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.dash-proj-count { font-size: 0.78rem; color: var(--text-mute); font-variant-numeric: tabular-nums; }
+
+/* ============================================================
+   Tela "Mais"
+   ============================================================ */
+.more-menu { margin-top: 8px; }
+.more-item {
+  display: flex; align-items: center; gap: 14px;
+  width: 100%;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 10px;
+  text-align: left;
+}
+.more-item:not(.disabled):active { transform: scale(0.99); }
+.more-item.disabled { opacity: 0.5; }
+.more-icon {
+  flex: 0 0 40px; width: 40px; height: 40px;
+  display: grid; place-items: center;
+  background: var(--surface-2); border-radius: 10px;
+  color: var(--accent);
+}
+.more-icon svg { width: 20px; height: 20px; }
+.more-text { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.more-title { font-weight: 600; font-size: 1rem; }
+.more-sub { font-size: 0.82rem; color: var(--text-mute); }
+.more-arrow { color: var(--text-mute); }
+.more-arrow svg { width: 20px; height: 20px; }

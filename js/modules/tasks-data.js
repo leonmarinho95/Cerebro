@@ -25,6 +25,17 @@ export function watchTasks(uid, callback) {
   });
 }
 
+// Observa as tarefas de um projeto específico (abertas e concluídas).
+export function watchProjectTasks(uid, projectId, callback) {
+  const q = query(userCol(uid, "tasks"), where("projectId", "==", projectId));
+  return onSnapshot(q, (snap) => {
+    const list = snap.docs
+      .map((d) => ({ id: d.id, ...d.data() }))
+      .filter((t) => t.status !== "archived");
+    callback(list);
+  });
+}
+
 // Cria uma tarefa. dueDate opcional ('YYYY-MM-DD' ou null).
 // projectId opcional (usado a partir da fatia de Projetos).
 export function createTask(uid, { title, dueDate = null, projectId = null, tags = [] }) {

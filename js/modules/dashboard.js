@@ -15,6 +15,8 @@ import { watchRoutines, markRoutineDone, undoRoutineDone, hasEntryOn } from "./r
 import { routineStatus, statusLabel, frequencyLabel } from "./routines-logic.js";
 import { watchTasks, setTaskDone, snoozeTask } from "./tasks-data.js";
 import { tasksForToday, upcomingTasks, taskDateState } from "./tasks-logic.js";
+import { watchProjects } from "./projects-data.js";
+import { projectProgress } from "./projects-logic.js";
 import { escapeHtml } from "../lib/util.js";
 import { todayKey, relativeDayLabel, diffDays } from "../lib/dates.js";
 import { icons } from "../lib/icons.js";
@@ -29,11 +31,12 @@ export function renderDashboard(container, ctx) {
   container.innerHTML = `<div id="dash"><p class="empty">Carregando…</p></div>`;
   const dashEl = document.getElementById("dash");
 
-  // Estado local: preenchido pelos dois listeners; re-renderiza a cada mudança.
-  const state = { routines: null, tasks: null };
+  // Estado local: preenchido pelos listeners; re-renderiza a cada mudança.
+  const state = { routines: null, tasks: null, projects: null };
 
   function paint() {
-    if (state.routines === null || state.tasks === null) return; // aguarda ambos
+    // Aguarda rotinas e tarefas (essenciais); projetos podem chegar depois.
+    if (state.routines === null || state.tasks === null) return;
     renderDash(dashEl, uid, state);
   }
 
@@ -49,8 +52,13 @@ export function renderDashboard(container, ctx) {
     paint();
   });
 
-  // Cleanup do roteador: encerra os dois listeners.
-  return () => { unsubR(); unsubT(); };
+  const unsubP = watchProjects(uid, (projects) => {
+    state.projects = projects;
+    paint();
+  });
+
+  // Cleanup do roteador: encerra os listeners.
+  return () => { unsubR(); unsubT(); unsubP(); };
 }
 
 function renderDash(el, uid, state) {
@@ -123,8 +131,21 @@ function renderDash(el, uid, state) {
       </div>`).join("") + `</div>`;
   }
 
-  // --- Projetos ativos: slot da fatia (e) ---
-  // (será preenchido quando o módulo de Projetos existir)
+  // --- Projetos ativos ---
+  const activeProjects = (state.projects || []).filter((p) => p.status === "active");
+  if (activeProjects.length) {
+    html += `<div class="section-title">Projetos ativos</div>`;
+    html += `<div class="dash-projects">` + activeProjects.map((p) => {
+      const prog = projectProgress((state.tasks || []).filter((t) => t.projectId === p.id && t.status !== "archived"));
+      return `
+        <div class="dash-proj" data-kind="project" data-id="${p.id}">
+          <span class="proj-color" style="background:${p.color}"></span>
+          <span class="dash-proj-name">${escapeHtml(p.name)}</span>
+          <div class="bar bar-sm"><div class="bar-fill" style="width:${prog.pct}%;background:${p.color}"></div></div>
+          <span class="dash-proj-count">${prog.done}/${prog.total}</span>
+        </div>`;
+    }).join("") + `</div>`;
+  }
 
   el.innerHTML = html;
   wireActions(el, uid, state, today);
@@ -213,5 +234,10 @@ function wireActions(el, uid, state, today) {
       snoozeTask(uid, t).then(() => toast("Adiada para amanhã")).catch(() => toast("Erro"));
     });
     row.querySelector(".task-main").addEventListener("click", () => navigate("/tarefas"));
+  });
+
+  // Projetos
+  el.querySelectorAll('[data-kind="project"]').forEach((row) => {
+    row.addEventListener("click", () => navigate("/projetos"));
   });
 }
