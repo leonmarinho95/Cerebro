@@ -9,11 +9,12 @@ import {
 import { projectProgress, compareProjects } from "./projects-logic.js";
 import {
   watchTasks, watchProjectTasks, createTask, setTaskDone,
+  updateTask, snoozeTask, deleteTask,
 } from "./tasks-data.js";
-import { groupTasks, taskDateState } from "./tasks-logic.js";
+import { taskDateState } from "./tasks-logic.js";
 import { openModal, toast, confirmModal } from "../lib/ui.js";
 import { escapeHtml } from "../lib/util.js";
-import { relativeDayLabel } from "../lib/dates.js";
+import { relativeDayLabel, todayKey } from "../lib/dates.js";
 import { icons } from "../lib/icons.js";
 
 export function renderProjects(container, ctx) {
@@ -193,8 +194,13 @@ function openProjectDetail(uid, project) {
       tasksEl.innerHTML = `<p class="empty" style="padding:12px 2px">Nenhuma tarefa neste projeto ainda.</p>`;
       return;
     }
-    const groups = groupTasks(tasks);
-    const ordered = [...groups.overdue, ...groups.today, ...groups.upcoming, ...groups.nodate, ...groups.done];
+    // Ordem estável e previsível no contexto do projeto: por data de criação
+    // (mais antigas em cima). Abertas primeiro; concluídas ao final.
+    const createdAsc = (a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0);
+    const open = tasks.filter((t) => t.status !== "done").sort(createdAsc);
+    const doneList = tasks.filter((t) => t.status === "done").sort(createdAsc);
+    const ordered = [...open, ...doneList];
+
     tasksEl.innerHTML = ordered.map((t) => {
       const done = t.status === "done";
       const state = taskDateState(t);
@@ -208,10 +214,67 @@ function openProjectDetail(uid, project) {
 
     tasksEl.querySelectorAll(".pd-task").forEach((row) => {
       const t = tasks.find((x) => x.id === row.dataset.id);
-      row.querySelector(".task-check").addEventListener("click", () => {
+      // Concluir/reabrir pelo check
+      row.querySelector(".task-check").addEventListener("click", (e) => {
+        e.stopPropagation();
         setTaskDone(uid, t.id, t.status !== "done").catch(() => toast("Erro"));
       });
+      // Editar tocando no título/linha
+      row.querySelector(".pd-task-title").addEventListener("click", () => openTaskEditForm(uid, t));
     });
+  });
+}
+
+// Editor de tarefa dentro do contexto do projeto (título, data, adiar, excluir).
+function openTaskEditForm(uid, task) {
+  const due = task.dueDate || "";
+  const { close } = openModal(`
+    <h2 class="modal-title">Editar tarefa</h2>
+    <label class="field">
+      <span class="field-label">Título</span>
+      <input id="et-title" type="text" value="${escapeHtml(task.title)}" />
+    </label>
+    <label class="field">
+      <span class="field-label">Vencimento (opcional)</span>
+      <input id="et-due" type="date" value="${due}" />
+      <div class="chip-row" style="margin-top:8px">
+        <button type="button" class="chip" id="et-today">Hoje</button>
+        <button type="button" class="chip" id="et-tomorrow">Amanhã</button>
+        <button type="button" class="chip" id="et-clear">Sem data</button>
+      </div>
+    </label>
+    <div class="modal-actions">
+      <button class="btn-ghost" id="et-delete">Excluir</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn-ghost" id="et-cancel">Cancelar</button>
+        <button class="btn-primary" id="et-save">Salvar</button>
+      </div>
+    </div>
+  `);
+
+  const titleEl = document.getElementById("et-title");
+  const dueEl = document.getElementById("et-due");
+  document.getElementById("et-today").addEventListener("click", () => { dueEl.value = todayKey(); });
+  document.getElementById("et-tomorrow").addEventListener("click", () => {
+    const d = new Date(); d.setDate(d.getDate() + 1);
+    dueEl.value = d.toISOString().slice(0, 10);
+  });
+  document.getElementById("et-clear").addEventListener("click", () => { dueEl.value = ""; });
+  document.getElementById("et-cancel").addEventListener("click", close);
+  document.getElementById("et-save").addEventListener("click", async () => {
+    const title = titleEl.value.trim();
+    if (!title) { titleEl.focus(); toast("Dê um título à tarefa"); return; }
+    try {
+      await updateTask(uid, task.id, { title, dueDate: dueEl.value || null });
+      toast("Tarefa atualizada");
+      close();
+    } catch (err) { console.error(err); toast("Erro ao salvar"); }
+  });
+  document.getElementById("et-delete").addEventListener("click", async () => {
+    const ok = await confirmModal(`Excluir “${escapeHtml(task.title)}”?`, { okLabel: "Excluir", danger: true });
+    if (!ok) return;
+    try { await deleteTask(uid, task.id); toast("Tarefa excluída"); close(); }
+    catch (err) { console.error(err); toast("Erro ao excluir"); }
   });
 }
 

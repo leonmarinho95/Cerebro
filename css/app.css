@@ -629,3 +629,6 @@ input[type="date"] { color-scheme: dark; }
 .more-sub { font-size: 0.82rem; color: var(--text-mute); }
 .more-arrow { color: var(--text-mute); }
 .more-arrow svg { width: 20px; height: 20px; }
+
+/* Título da tarefa no detalhe do projeto é tocável (abre edição) */
+.pd-task-title { cursor: pointer; }
