@@ -9,7 +9,7 @@
 // seguintes (Rotinas, Tarefas, Dashboard, Projetos, Conhecimento, Tags)
 // substituem cada render() pelo módulo real, sem alterar este shell.
 
-import { onAuth, signIn, signOutUser, ensureUserDoc } from "./auth.js";
+import { onAuth, signIn, signOutUser, ensureUserDoc, completeRedirectSignIn } from "./auth.js";
 import { registerRoute, setContext, startRouter, navigate } from "./router.js";
 import { icons } from "./lib/icons.js";
 import { formatHeaderDate } from "./lib/dates.js";
@@ -118,6 +118,10 @@ function registerRoutes() {
 
 /* ---------- Boot ---------- */
 let shellMounted = false;
+
+// Finaliza um eventual login por redirect (fallback do popup no PWA) antes de
+// observar o estado de autenticação.
+completeRedirectSignIn();
 
 onAuth(async (user) => {
   if (!user) {
