@@ -6,6 +6,7 @@ import {
   watchTasks, createTask, updateTask, setTaskDone, snoozeTask,
   archiveTask, deleteTask, archiveTasksBatch,
 } from "./tasks-data.js";
+import { watchProjects } from "./projects-data.js";
 import { groupTasks, taskDateState } from "./tasks-logic.js";
 import { openModal, toast, confirmModal } from "../lib/ui.js";
 import { escapeHtml } from "../lib/util.js";
@@ -37,16 +38,44 @@ export function renderTasks(container, ctx) {
   const listEl = document.getElementById("tasks-list");
   const subEl = document.getElementById("tasks-sub");
 
-  const unsub = watchTasks(uid, (tasks) => {
-    const today = todayKey();
-    const groups = groupTasks(tasks, today);
-    renderList(listEl, subEl, uid, groups);
+  // Estado: tarefas + mapa de projetos (para o selo de projeto nas linhas).
+  const state = { tasks: null, projectMap: {} };
+
+  function paint() {
+    if (state.tasks === null) return;
+    const groups = groupTasks(state.tasks, todayKey());
+    renderList(listEl, subEl, uid, groups, state.projectMap);
+  }
+
+  const unsubT = watchTasks(uid, (tasks) => { state.tasks = tasks; paint(); });
+  const unsubP = watchProjects(uid, (projects) => {
+    const map = {};
+    projects.forEach((p) => { map[p.id] = { name: p.name, color: p.color }; });
+    state.projectMap = map;
+    paint();
   });
 
-  return unsub;
+  return () => { unsubT(); unsubP(); };
 }
 
-function renderList(listEl, subEl, uid, groups) {
+// Dentro de cada grupo de urgência, agrupa por projeto: soltas primeiro,
+// depois as de cada projeto juntas. Preserva a ordem de entrada dos itens
+// (que já vem ordenada por data pela lógica de agrupamento).
+function orderByProject(items) {
+  const loose = items.filter((t) => !t.projectId);
+  const withProj = items.filter((t) => t.projectId);
+  // Estável: agrupa por projectId preservando a ordem relativa original.
+  const seen = [];
+  const byProj = {};
+  for (const t of withProj) {
+    if (!byProj[t.projectId]) { byProj[t.projectId] = []; seen.push(t.projectId); }
+    byProj[t.projectId].push(t);
+  }
+  const grouped = seen.flatMap((pid) => byProj[pid]);
+  return [...loose, ...grouped];
+}
+
+function renderList(listEl, subEl, uid, groups, projectMap = {}) {
   const openCount = groups.overdue.length + groups.today.length + groups.upcoming.length + groups.nodate.length;
   const parts = [];
   if (groups.overdue.length) parts.push(`${groups.overdue.length} atrasada${groups.overdue.length > 1 ? "s" : ""}`);
@@ -67,7 +96,7 @@ function renderList(listEl, subEl, uid, groups) {
     const items = groups[sec.key];
     if (!items.length) continue;
     html += `<div class="section-title">${sec.label}</div>`;
-    html += items.map((t) => taskRow(t)).join("");
+    html += orderByProject(items).map((t) => taskRow(t, projectMap)).join("");
   }
 
   // Seção Concluídas: recolhível, com ação de arquivar todas.
@@ -81,7 +110,7 @@ function renderList(listEl, subEl, uid, groups) {
         ${showDone ? `<button class="done-archive" id="done-archive">Arquivar todas</button>` : ""}
       </div>`;
     if (showDone) {
-      html += groups.done.map((t) => taskRow(t)).join("");
+      html += groups.done.map((t) => taskRow(t, projectMap)).join("");
     }
   }
 
@@ -91,7 +120,7 @@ function renderList(listEl, subEl, uid, groups) {
   const toggle = document.getElementById("done-toggle");
   if (toggle) toggle.addEventListener("click", () => {
     showDone = !showDone;
-    renderList(listEl, subEl, uid, groups);
+    renderList(listEl, subEl, uid, groups, projectMap);
   });
   // Arquivar todas as concluídas (em massa, via batch)
   const archiveAll = document.getElementById("done-archive");
@@ -128,14 +157,18 @@ function renderList(listEl, subEl, uid, groups) {
   });
 }
 
-function taskRow(t) {
+function taskRow(t, projectMap = {}) {
   const done = t.status === "done";
   const state = taskDateState(t);
-  let badge = "";
+  const meta = [];
   if (!done && t.dueDate) {
-    badge = `<span class="task-badge state-${state}">${relativeDayLabel(t.dueDate)}</span>`;
+    meta.push(`<span class="task-badge state-${state}">${relativeDayLabel(t.dueDate)}</span>`);
   }
-  // Botão de adiar só para tarefas abertas (atalho de reagendar)
+  // Selo do projeto (cor + nome) quando a tarefa pertence a um projeto.
+  const proj = t.projectId ? projectMap[t.projectId] : null;
+  if (proj) {
+    meta.push(`<span class="task-proj"><span class="task-proj-dot" style="background:${proj.color}"></span>${escapeHtml(proj.name)}</span>`);
+  }
   const snoozeBtn = !done
     ? `<button class="task-snooze" aria-label="Adiar para amanhã">${icons.snooze}</button>`
     : "";
@@ -147,7 +180,7 @@ function taskRow(t) {
       </button>
       <div class="task-main">
         <div class="task-title">${escapeHtml(t.title)}</div>
-        ${badge ? `<div class="task-meta">${badge}</div>` : ""}
+        ${meta.length ? `<div class="task-meta">${meta.join("")}</div>` : ""}
       </div>
       ${snoozeBtn}
     </div>`;
