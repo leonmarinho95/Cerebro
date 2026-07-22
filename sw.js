@@ -3,7 +3,7 @@
 // O SDK do Firebase e as fontes vêm de CDN e são tratados pela rede/cache do
 // navegador; a persistência de dados do Firestore já é offline-first.
 
-const CACHE = "cerebro-shell-v10";
+const CACHE = "cerebro-shell-v11";
 const SHELL = [
   "./index.html",
   "./css/app.css",

@@ -9,7 +9,7 @@ import {
 import { projectProgress, compareProjects } from "./projects-logic.js";
 import {
   watchTasks, watchProjectTasks, createTask, setTaskDone,
-  updateTask, snoozeTask, deleteTask,
+  updateTask, snoozeTask, deleteTask, swapTaskOrder,
 } from "./tasks-data.js";
 import { taskDateState } from "./tasks-logic.js";
 import { openModal, toast, confirmModal } from "../lib/ui.js";
@@ -194,23 +194,15 @@ function openProjectDetail(uid, project) {
       tasksEl.innerHTML = `<p class="empty" style="padding:12px 2px">Nenhuma tarefa neste projeto ainda.</p>`;
       return;
     }
-    // Ordem estável e previsível no contexto do projeto: por data de criação
-    // (mais antigas em cima). Abertas primeiro; concluídas ao final.
-    const createdAsc = (a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0);
-    const open = tasks.filter((t) => t.status !== "done").sort(createdAsc);
-    const doneList = tasks.filter((t) => t.status === "done").sort(createdAsc);
-    const ordered = [...open, ...doneList];
+    // Ordem no projeto: abertas por 'order' (posição manual); concluídas ao
+    // final, por conclusão mais recente. Fallback p/ tarefas antigas sem order.
+    const ord = (t) => (t.order ?? (t.createdAt?.seconds || 0) * 1000);
+    const open = tasks.filter((t) => t.status !== "done").sort((a, b) => ord(a) - ord(b));
+    const doneList = tasks.filter((t) => t.status === "done")
+      .sort((a, b) => (b.completedAt?.seconds || 0) - (a.completedAt?.seconds || 0));
 
-    tasksEl.innerHTML = ordered.map((t) => {
-      const done = t.status === "done";
-      const state = taskDateState(t);
-      return `
-        <div class="pd-task ${done ? "is-done" : ""}" data-id="${t.id}">
-          <button class="task-check ${done ? "checked" : ""}" aria-label="${done ? "Reabrir" : "Concluir"}">${icons.checkSmall}</button>
-          <span class="pd-task-title">${escapeHtml(t.title)}</span>
-          ${!done && t.dueDate ? `<span class="task-badge state-${state}">${relativeDayLabel(t.dueDate)}</span>` : ""}
-        </div>`;
-    }).join("");
+    tasksEl.innerHTML = open.map((t, i) => pdTaskRow(t, i, open.length)).join("")
+      + doneList.map((t) => pdTaskRow(t, -1, 0)).join("");
 
     tasksEl.querySelectorAll(".pd-task").forEach((row) => {
       const t = tasks.find((x) => x.id === row.dataset.id);
@@ -219,10 +211,44 @@ function openProjectDetail(uid, project) {
         e.stopPropagation();
         setTaskDone(uid, t.id, t.status !== "done").catch(() => toast("Erro"));
       });
-      // Editar tocando no título/linha
+      // Editar tocando no título
       row.querySelector(".pd-task-title").addEventListener("click", () => openTaskEditForm(uid, t));
+      // Subir / descer (reordenar) — troca 'order' com o vizinho na lista de abertas
+      const up = row.querySelector(".pd-up");
+      const down = row.querySelector(".pd-down");
+      if (up) up.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const idx = open.findIndex((x) => x.id === t.id);
+        if (idx > 0) swapTaskOrder(uid, open[idx], open[idx - 1]).catch(() => toast("Erro"));
+      });
+      if (down) down.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const idx = open.findIndex((x) => x.id === t.id);
+        if (idx < open.length - 1) swapTaskOrder(uid, open[idx], open[idx + 1]).catch(() => toast("Erro"));
+      });
     });
   });
+}
+
+// Linha de tarefa no detalhe. index/total definem os botões de reordenar
+// (só para abertas; index === -1 indica concluída, sem reordenação).
+function pdTaskRow(t, index, total) {
+  const done = t.status === "done";
+  const state = taskDateState(t);
+  const canReorder = index >= 0 && total > 1;
+  const reorder = canReorder
+    ? `<div class="pd-reorder">
+         <button class="pd-up" aria-label="Subir" ${index === 0 ? "disabled" : ""}>${icons.chevronUp}</button>
+         <button class="pd-down" aria-label="Descer" ${index === total - 1 ? "disabled" : ""}>${icons.chevronDown}</button>
+       </div>`
+    : "";
+  return `
+    <div class="pd-task ${done ? "is-done" : ""}" data-id="${t.id}">
+      <button class="task-check ${done ? "checked" : ""}" aria-label="${done ? "Reabrir" : "Concluir"}">${icons.checkSmall}</button>
+      <span class="pd-task-title">${escapeHtml(t.title)}</span>
+      ${!done && t.dueDate ? `<span class="task-badge state-${state}">${relativeDayLabel(t.dueDate)}</span>` : ""}
+      ${reorder}
+    </div>`;
 }
 
 // Editor de tarefa dentro do contexto do projeto (título, data, adiar, excluir).

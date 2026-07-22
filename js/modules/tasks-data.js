@@ -10,8 +10,10 @@
 
 import {
   addDoc, updateDoc, deleteDoc, query, where, onSnapshot, serverTimestamp,
+  writeBatch,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+import { db } from "../firebase.js";
 import { userCol, userDoc, normalizeSearch } from "../lib/util.js";
 import { addDays, todayKey } from "../lib/dates.js";
 
@@ -51,6 +53,9 @@ export function createTask(uid, { title, dueDate = null, projectId = null, tags 
     checklist: [],        // reservado
     tags,
     links: [],            // reservado (Fase 3)
+    // order: posição manual dentro de um projeto. Inicia com o tempo atual
+    // (ms), o que preserva a ordem de criação até o usuário reordenar.
+    order: Date.now(),
     searchText: normalizeSearch(title, ...tags),
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
@@ -93,4 +98,23 @@ export function archiveTask(uid, id) {
 
 export function deleteTask(uid, id) {
   return deleteDoc(userDoc(uid, "tasks", id));
+}
+
+// Troca a posição (order) entre duas tarefas — base dos botões subir/descer.
+// Um único batch garante que a troca seja atômica.
+export function swapTaskOrder(uid, taskA, taskB) {
+  const batch = writeBatch(db);
+  batch.update(userDoc(uid, "tasks", taskA.id), { order: taskB.order, updatedAt: serverTimestamp() });
+  batch.update(userDoc(uid, "tasks", taskB.id), { order: taskA.order, updatedAt: serverTimestamp() });
+  return batch.commit();
+}
+
+// Arquiva várias tarefas de uma vez (some da vista, preserva histórico).
+// Usa batch: 1 commit para até 500 operações. Barato e atômico.
+export function archiveTasksBatch(uid, ids) {
+  const batch = writeBatch(db);
+  ids.forEach((id) => {
+    batch.update(userDoc(uid, "tasks", id), { status: "archived", updatedAt: serverTimestamp() });
+  });
+  return batch.commit();
 }

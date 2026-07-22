@@ -632,3 +632,41 @@ input[type="date"] { color-scheme: dark; }
 
 /* Título da tarefa no detalhe do projeto é tocável (abre edição) */
 .pd-task-title { cursor: pointer; }
+
+/* ============================================================
+   Reordenar tarefas no projeto + seção Concluídas recolhível
+   ============================================================ */
+.pd-reorder { display: flex; flex-direction: column; gap: 2px; flex: 0 0 auto; margin-left: 4px; }
+.pd-up, .pd-down {
+  width: 26px; height: 20px;
+  display: grid; place-items: center;
+  color: var(--text-mute); border-radius: 5px;
+}
+.pd-up svg, .pd-down svg { width: 15px; height: 15px; }
+.pd-up:hover:not(:disabled), .pd-down:hover:not(:disabled) { background: var(--surface-3); color: var(--text); }
+.pd-up:disabled, .pd-down:disabled { opacity: 0.25; }
+.pd-up:active:not(:disabled), .pd-down:active:not(:disabled) { transform: scale(0.9); }
+
+/* Cabeçalho da seção Concluídas (aba Tarefas) */
+.done-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; margin: 22px 2px 8px;
+}
+.done-toggle {
+  display: flex; align-items: center; gap: 6px;
+  font-family: var(--font-display);
+  font-size: 0.78rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--text-mute);
+}
+.done-chevron { display: inline-grid; place-items: center; transition: transform 0.2s; }
+.done-chevron svg { width: 15px; height: 15px; }
+.done-chevron:not(.open) { transform: rotate(-90deg); }
+.done-archive {
+  font-size: 0.78rem; font-weight: 600;
+  color: var(--text-soft);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  padding: 5px 10px; border-radius: 8px;
+}
+.done-archive:active { transform: scale(0.96); }

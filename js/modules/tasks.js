@@ -4,7 +4,7 @@
 
 import {
   watchTasks, createTask, updateTask, setTaskDone, snoozeTask,
-  archiveTask, deleteTask,
+  archiveTask, deleteTask, archiveTasksBatch,
 } from "./tasks-data.js";
 import { groupTasks, taskDateState } from "./tasks-logic.js";
 import { openModal, toast, confirmModal } from "../lib/ui.js";
@@ -17,8 +17,10 @@ const SECTIONS = [
   { key: "today", label: "Hoje" },
   { key: "upcoming", label: "Em breve" },
   { key: "nodate", label: "Sem data" },
-  { key: "done", label: "Concluídas" },
 ];
+
+// Preferência de sessão: mostrar ou ocultar as tarefas concluídas.
+let showDone = false;
 
 export function renderTasks(container, ctx) {
   const { uid } = ctx;
@@ -64,17 +66,54 @@ function renderList(listEl, subEl, uid, groups) {
   for (const sec of SECTIONS) {
     const items = groups[sec.key];
     if (!items.length) continue;
-    const count = sec.key === "done" ? ` (${items.length})` : "";
-    html += `<div class="section-title">${sec.label}${count}</div>`;
+    html += `<div class="section-title">${sec.label}</div>`;
     html += items.map((t) => taskRow(t)).join("");
   }
+
+  // Seção Concluídas: recolhível, com ação de arquivar todas.
+  if (groups.done.length) {
+    html += `
+      <div class="done-head">
+        <button class="done-toggle" id="done-toggle">
+          <span class="done-chevron ${showDone ? "open" : ""}">${icons.chevronDown}</span>
+          Concluídas (${groups.done.length})
+        </button>
+        ${showDone ? `<button class="done-archive" id="done-archive">Arquivar todas</button>` : ""}
+      </div>`;
+    if (showDone) {
+      html += groups.done.map((t) => taskRow(t)).join("");
+    }
+  }
+
   listEl.innerHTML = html;
 
-  // Liga ações
+  // Toggle mostrar/ocultar concluídas
+  const toggle = document.getElementById("done-toggle");
+  if (toggle) toggle.addEventListener("click", () => {
+    showDone = !showDone;
+    renderList(listEl, subEl, uid, groups);
+  });
+  // Arquivar todas as concluídas (em massa, via batch)
+  const archiveAll = document.getElementById("done-archive");
+  if (archiveAll) archiveAll.addEventListener("click", async () => {
+    const n = groups.done.length;
+    const ok = await confirmModal(
+      `Arquivar ${n} tarefa${n > 1 ? "s" : ""} concluída${n > 1 ? "s" : ""}? Elas somem da lista, mas o histórico é preservado.`,
+      { okLabel: "Arquivar" }
+    );
+    if (!ok) return;
+    try {
+      await archiveTasksBatch(uid, groups.done.map((t) => t.id));
+      toast(`${n} arquivada${n > 1 ? "s" : ""}`);
+    } catch (err) { console.error(err); toast("Erro ao arquivar"); }
+  });
+
+  // Liga ações das linhas visíveis
+  const visible = [...groups.overdue, ...groups.today, ...groups.upcoming, ...groups.nodate];
+  if (showDone) visible.push(...groups.done);
   listEl.querySelectorAll(".task-row").forEach((row) => {
     const id = row.dataset.id;
-    const all = [...groups.overdue, ...groups.today, ...groups.upcoming, ...groups.nodate, ...groups.done];
-    const task = all.find((t) => t.id === id);
+    const task = visible.find((t) => t.id === id);
     if (!task) return;
     row.querySelector(".task-check").addEventListener("click", (e) => {
       e.stopPropagation();
