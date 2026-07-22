@@ -100,12 +100,14 @@ export function deleteTask(uid, id) {
   return deleteDoc(userDoc(uid, "tasks", id));
 }
 
-// Troca a posição (order) entre duas tarefas — base dos botões subir/descer.
-// Um único batch garante que a troca seja atômica.
-export function swapTaskOrder(uid, taskA, taskB) {
+// Troca a posição entre duas tarefas — base dos botões subir/descer.
+// Recebe os valores de order EFETIVOS (já resolvidos pelo chamador, com
+// fallback), garantindo que nunca se grave undefined (o Firestore rejeita).
+// Um único batch torna a troca atômica.
+export function swapTaskOrder(uid, idA, orderA, idB, orderB) {
   const batch = writeBatch(db);
-  batch.update(userDoc(uid, "tasks", taskA.id), { order: taskB.order, updatedAt: serverTimestamp() });
-  batch.update(userDoc(uid, "tasks", taskB.id), { order: taskA.order, updatedAt: serverTimestamp() });
+  batch.update(userDoc(uid, "tasks", idA), { order: orderB, updatedAt: serverTimestamp() });
+  batch.update(userDoc(uid, "tasks", idB), { order: orderA, updatedAt: serverTimestamp() });
   return batch.commit();
 }
 

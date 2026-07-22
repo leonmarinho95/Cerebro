@@ -213,18 +213,29 @@ function openProjectDetail(uid, project) {
       });
       // Editar tocando no título
       row.querySelector(".pd-task-title").addEventListener("click", () => openTaskEditForm(uid, t));
-      // Subir / descer (reordenar) — troca 'order' com o vizinho na lista de abertas
+      // Subir / descer (reordenar) — troca a posição com o vizinho.
+      // Passamos os valores de order EFETIVOS (com fallback), nunca undefined.
       const up = row.querySelector(".pd-up");
       const down = row.querySelector(".pd-down");
+      const doSwap = (a, b) => {
+        let oa = ord(a);
+        let ob = ord(b);
+        // Desempate: se os valores efetivos coincidirem, cria uma diferença
+        // mínima para a troca produzir efeito visível.
+        if (oa === ob) { oa = oa + 1; }
+        swapTaskOrder(uid, a.id, oa, b.id, ob).catch((err) => {
+          console.error(err); toast("Erro ao reordenar");
+        });
+      };
       if (up) up.addEventListener("click", (e) => {
         e.stopPropagation();
         const idx = open.findIndex((x) => x.id === t.id);
-        if (idx > 0) swapTaskOrder(uid, open[idx], open[idx - 1]).catch(() => toast("Erro"));
+        if (idx > 0) doSwap(open[idx], open[idx - 1]);
       });
       if (down) down.addEventListener("click", (e) => {
         e.stopPropagation();
         const idx = open.findIndex((x) => x.id === t.id);
-        if (idx < open.length - 1) swapTaskOrder(uid, open[idx], open[idx + 1]).catch(() => toast("Erro"));
+        if (idx < open.length - 1) doSwap(open[idx], open[idx + 1]);
       });
     });
   });
