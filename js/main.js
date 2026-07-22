@@ -19,6 +19,7 @@ import { openCapture } from "./modules/capture.js";
 import { renderDashboard } from "./modules/dashboard.js";
 import { renderProjects } from "./modules/projects.js";
 import { renderMore } from "./modules/more.js";
+import { renderNotes } from "./modules/notes.js";
 
 const appEl = document.getElementById("app");
 
@@ -119,6 +120,10 @@ function registerRoutes() {
   registerRoute("/projetos", {
     title: "Projetos",
     render: renderProjects,
+  });
+  registerRoute("/conhecimento", {
+    title: "Conhecimento",
+    render: renderNotes,
   });
 }
 

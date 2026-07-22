@@ -17,12 +17,13 @@ export function renderMore(container, ctx) {
         <span class="more-arrow">${icons.chevron}</span>
       </button>
 
-      <button class="more-item disabled" data-go="" aria-disabled="true">
+      <button class="more-item" data-go="/conhecimento">
         <span class="more-icon">${icons.book}</span>
         <span class="more-text">
           <span class="more-title">Conhecimento</span>
-          <span class="more-sub">Notas e informações · em breve</span>
+          <span class="more-sub">Notas e informações</span>
         </span>
+        <span class="more-arrow">${icons.chevron}</span>
       </button>
     </div>
   `;
