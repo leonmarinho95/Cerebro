@@ -6,7 +6,7 @@ import {
   watchNotes, createNote, updateNote, togglePin, deleteNote,
 } from "./notes-data.js";
 import { openModal, toast, confirmModal } from "../lib/ui.js";
-import { escapeHtml, normalizeSearch, debounce } from "../lib/util.js";
+import { escapeHtml, normalizeSearch, debounce, parseTags } from "../lib/util.js";
 import { icons } from "../lib/icons.js";
 
 // Estado de busca/filtro (sessão).
@@ -183,14 +183,4 @@ function openNoteForm(uid, note = null) {
       catch (err) { console.error(err); toast("Erro ao excluir"); }
     });
   }
-}
-
-// Converte "a, b ,c" em ["a","b","c"] limpo, sem duplicatas nem vazios.
-export function parseTags(str) {
-  return [...new Set(
-    (str || "")
-      .split(",")
-      .map((t) => t.trim().toLowerCase())
-      .filter(Boolean)
-  )];
 }

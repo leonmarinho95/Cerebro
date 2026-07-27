@@ -9,7 +9,7 @@ import {
 import { watchProjects } from "./projects-data.js";
 import { groupTasks, taskDateState } from "./tasks-logic.js";
 import { openModal, toast, confirmModal } from "../lib/ui.js";
-import { escapeHtml } from "../lib/util.js";
+import { escapeHtml, parseTags } from "../lib/util.js";
 import { todayKey, relativeDayLabel } from "../lib/dates.js";
 import { icons } from "../lib/icons.js";
 
@@ -169,6 +169,10 @@ function taskRow(t, projectMap = {}) {
   if (proj) {
     meta.push(`<span class="task-proj"><span class="task-proj-dot" style="background:${proj.color}"></span>${escapeHtml(proj.name)}</span>`);
   }
+  // Tags da tarefa
+  (t.tags || []).forEach((tag) => {
+    meta.push(`<span class="note-tag">#${escapeHtml(tag)}</span>`);
+  });
   const snoozeBtn = !done
     ? `<button class="task-snooze" aria-label="Adiar para amanhã">${icons.snooze}</button>`
     : "";
@@ -190,6 +194,7 @@ function taskRow(t, projectMap = {}) {
 function openTaskForm(uid, task = null) {
   const editing = !!task;
   const due = task?.dueDate || "";
+  const tagsStr = (task?.tags || []).join(", ");
 
   const { close } = openModal(`
     <h2 class="modal-title">${editing ? "Editar tarefa" : "Nova tarefa"}</h2>
@@ -205,6 +210,10 @@ function openTaskForm(uid, task = null) {
         <button type="button" class="chip" id="t-tomorrow">Amanhã</button>
         <button type="button" class="chip" id="t-clear">Sem data</button>
       </div>
+    </label>
+    <label class="field">
+      <span class="field-label">Tags (separadas por vírgula)</span>
+      <input id="t-tags" type="text" placeholder="carro, casa" value="${escapeHtml(tagsStr)}" />
     </label>
     <div class="modal-actions">
       ${editing ? '<button class="btn-ghost" id="t-delete">Excluir</button>' : "<span></span>"}
@@ -229,9 +238,10 @@ function openTaskForm(uid, task = null) {
     const title = titleEl.value.trim();
     if (!title) { titleEl.focus(); toast("Dê um título à tarefa"); return; }
     const dueDate = dueEl.value || null;
+    const tags = parseTags(document.getElementById("t-tags").value);
     try {
-      if (editing) { await updateTask(uid, task.id, { title, dueDate }); toast("Tarefa atualizada"); }
-      else { await createTask(uid, { title, dueDate }); toast("Tarefa criada"); }
+      if (editing) { await updateTask(uid, task.id, { title, dueDate, tags }); toast("Tarefa atualizada"); }
+      else { await createTask(uid, { title, dueDate, tags }); toast("Tarefa criada"); }
       close();
     } catch (err) { console.error(err); toast("Erro ao salvar"); }
   });

@@ -50,3 +50,14 @@ export function escapeHtml(str = "") {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 }
+
+// Converte "a, b ,c" em ["a","b","c"] limpo, minúsculo, sem duplicatas/vazios.
+// Usado pelos formulários de nota, tarefa e projeto.
+export function parseTags(str) {
+  return [...new Set(
+    (str || "")
+      .split(",")
+      .map((t) => t.trim().toLowerCase())
+      .filter(Boolean)
+  )];
+}

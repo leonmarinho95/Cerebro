@@ -19,6 +19,10 @@ export function openCapture(uid, { onSaved } = {}) {
       <button type="button" class="chip" data-type="note">Nota</button>
     </div>
 
+    <label class="field" id="cap-title-field" style="display:none;margin-bottom:12px">
+      <input id="cap-title" type="text" placeholder="Título (opcional)" />
+    </label>
+
     <label class="field" style="margin-bottom:12px">
       <textarea id="cap-text" rows="3" placeholder="Escreva qualquer coisa..." style="resize:none"></textarea>
     </label>
@@ -45,6 +49,8 @@ export function openCapture(uid, { onSaved } = {}) {
   let when = "none";
   const textEl = overlay.querySelector("#cap-text");
   const whenField = overlay.querySelector("#cap-when-field");
+  const titleField = overlay.querySelector("#cap-title-field");
+  const titleEl = overlay.querySelector("#cap-title");
   const hintEl = overlay.querySelector("#cap-hint");
 
   overlay.querySelector("#cap-type").addEventListener("click", (e) => {
@@ -52,9 +58,12 @@ export function openCapture(uid, { onSaved } = {}) {
     if (!b) return;
     type = b.dataset.type;
     overlay.querySelectorAll("#cap-type .chip").forEach((c) => c.classList.toggle("sel", c === b));
-    whenField.style.display = type === "task" ? "" : "none";
-    hintEl.textContent = type === "task" ? "Vira uma tarefa" : "Vira uma nota";
-    textEl.focus();
+    const isNote = type === "note";
+    whenField.style.display = isNote ? "none" : "";     // vencimento só p/ tarefa
+    titleField.style.display = isNote ? "" : "none";    // título só p/ nota
+    textEl.placeholder = isNote ? "Escreva a nota..." : "Escreva qualquer coisa...";
+    hintEl.textContent = isNote ? "Vira uma nota" : "Vira uma tarefa";
+    (isNote ? titleEl : textEl).focus();
   });
 
   overlay.querySelector("#cap-when").addEventListener("click", (e) => {
@@ -69,7 +78,7 @@ export function openCapture(uid, { onSaved } = {}) {
     if (!text) { textEl.focus(); toast("Escreva algo para capturar"); return; }
     try {
       if (type === "note") {
-        await createNote(uid, { body: text });
+        await createNote(uid, { title: titleEl.value.trim(), body: text });
         toast("Nota criada");
       } else {
         let dueDate = null;

@@ -13,7 +13,7 @@ import {
 } from "./tasks-data.js";
 import { taskDateState } from "./tasks-logic.js";
 import { openModal, toast, confirmModal } from "../lib/ui.js";
-import { escapeHtml } from "../lib/util.js";
+import { escapeHtml, parseTags } from "../lib/util.js";
 import { relativeDayLabel, todayKey } from "../lib/dates.js";
 import { icons } from "../lib/icons.js";
 
@@ -88,6 +88,7 @@ function renderProjectList(listEl, subEl, uid, state) {
 function openProjectForm(uid, project = null) {
   const editing = !!project;
   const color = project?.color || PROJECT_COLORS[0];
+  const tagsStr = (project?.tags || []).join(", ");
   const { close } = openModal(`
     <h2 class="modal-title">${editing ? "Editar projeto" : "Novo projeto"}</h2>
     <label class="field">
@@ -104,6 +105,10 @@ function openProjectForm(uid, project = null) {
         ${PROJECT_COLORS.map((c) => `<button type="button" class="swatch ${c === color ? "sel" : ""}" data-c="${c}" style="background:${c}"></button>`).join("")}
       </div>
     </div>
+    <label class="field">
+      <span class="field-label">Tags (separadas por vírgula)</span>
+      <input id="p-tags" type="text" placeholder="casa, reforma" value="${escapeHtml(tagsStr)}" />
+    </label>
     <div class="modal-actions">
       ${editing ? '<button class="btn-ghost" id="p-delete">Excluir</button>' : "<span></span>"}
       <div style="display:flex;gap:8px">
@@ -126,9 +131,10 @@ function openProjectForm(uid, project = null) {
     const name = nameEl.value.trim();
     if (!name) { nameEl.focus(); toast("Dê um nome ao projeto"); return; }
     const description = document.getElementById("p-desc").value;
+    const tags = parseTags(document.getElementById("p-tags").value);
     try {
-      if (editing) { await updateProject(uid, project.id, { name, description, color: chosen }); toast("Projeto atualizado"); }
-      else { await createProject(uid, { name, description, color: chosen }); toast("Projeto criado"); }
+      if (editing) { await updateProject(uid, project.id, { name, description, color: chosen, tags }); toast("Projeto atualizado"); }
+      else { await createProject(uid, { name, description, color: chosen, tags }); toast("Projeto criado"); }
       close();
     } catch (err) { console.error(err); toast("Erro ao salvar"); }
   });
