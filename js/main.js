@@ -21,6 +21,7 @@ import { renderProjects } from "./modules/projects.js";
 import { renderMore } from "./modules/more.js";
 import { renderNotes } from "./modules/notes.js";
 import { renderTags } from "./modules/tags.js";
+import { openSearch } from "./modules/search.js";
 
 const appEl = document.getElementById("app");
 
@@ -84,9 +85,9 @@ function renderShell(ctx) {
     openCapture(ctx.uid);
   });
 
-  // Busca — reservada para a Fase 2
+  // Busca global — abre o overlay de busca transversal
   document.getElementById("btn-search").addEventListener("click", () => {
-    console.info("Busca global: reservada para a Fase 2.");
+    openSearch(ctx.uid);
   });
 }
 

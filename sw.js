@@ -3,7 +3,7 @@
 // O SDK do Firebase e as fontes vêm de CDN e são tratados pela rede/cache do
 // navegador; a persistência de dados do Firestore já é offline-first.
 
-const CACHE = "cerebro-shell-v16";
+const CACHE = "cerebro-shell-v17";
 const SHELL = [
   "./index.html",
   "./css/app.css",
@@ -32,6 +32,7 @@ const SHELL = [
   "./js/modules/notes-data.js",
   "./js/modules/notes.js",
   "./js/modules/tags.js",
+  "./js/modules/search.js",
 ];
 
 self.addEventListener("install", (e) => {
