@@ -766,3 +766,57 @@ input[type="date"] { color-scheme: dark; }
 .field-check input[type="checkbox"] {
   width: 20px; height: 20px; accent-color: var(--accent);
 }
+
+/* ============================================================
+   Tela de Tags (visão transversal)
+   ============================================================ */
+.tag-cloud { display: flex; flex-wrap: wrap; gap: 8px; }
+.tag-cloud-item {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 8px 8px 8px 14px;
+  color: var(--text);
+  font-weight: 600; font-size: 0.9rem;
+}
+.tag-cloud-item:active { transform: scale(0.97); }
+.tag-cloud-name { color: var(--text); }
+.tag-cloud-count {
+  min-width: 22px; height: 22px; padding: 0 6px;
+  display: grid; place-items: center;
+  background: var(--surface-3); color: var(--text-soft);
+  border-radius: 999px; font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.tag-back {
+  display: inline-flex; align-items: center; gap: 4px;
+  color: var(--text-soft); font-size: 0.88rem; font-weight: 600;
+  margin: 6px 0 4px;
+}
+.tag-back svg { width: 18px; height: 18px; transform: rotate(180deg); }
+.tag-back:active { transform: scale(0.97); }
+.tag-detail-title {
+  font-family: var(--font-display);
+  font-size: 1.5rem; font-weight: 800;
+  color: var(--accent);
+  margin: 2px 0 4px;
+}
+
+.tag-items { display: flex; flex-direction: column; gap: 6px; }
+.tag-item {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 11px 13px;
+  cursor: pointer;
+}
+.tag-item:active { transform: scale(0.99); }
+.tag-item-icon { display: grid; place-items: center; color: var(--text-mute); flex: 0 0 18px; }
+.tag-item-icon svg { width: 17px; height: 17px; }
+.tag-item-name {
+  flex: 1; min-width: 0; font-size: 0.92rem;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}

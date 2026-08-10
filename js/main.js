@@ -20,6 +20,7 @@ import { renderDashboard } from "./modules/dashboard.js";
 import { renderProjects } from "./modules/projects.js";
 import { renderMore } from "./modules/more.js";
 import { renderNotes } from "./modules/notes.js";
+import { renderTags } from "./modules/tags.js";
 
 const appEl = document.getElementById("app");
 
@@ -124,6 +125,10 @@ function registerRoutes() {
   registerRoute("/conhecimento", {
     title: "Conhecimento",
     render: renderNotes,
+  });
+  registerRoute("/tags", {
+    title: "Tags",
+    render: renderTags,
   });
 }
 

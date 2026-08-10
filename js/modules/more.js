@@ -25,6 +25,15 @@ export function renderMore(container, ctx) {
         </span>
         <span class="more-arrow">${icons.chevron}</span>
       </button>
+
+      <button class="more-item" data-go="/tags">
+        <span class="more-icon">${icons.tag}</span>
+        <span class="more-text">
+          <span class="more-title">Tags</span>
+          <span class="more-sub">Tudo reunido por etiqueta</span>
+        </span>
+        <span class="more-arrow">${icons.chevron}</span>
+      </button>
     </div>
   `;
 

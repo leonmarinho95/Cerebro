@@ -55,7 +55,7 @@ async function renderCurrent() {
 
   // Atualiza estado ativo das abas. Rotas sem aba própria (ex.: /projetos)
   // mantêm "Mais" destacada.
-  const MORE_CHILDREN = ["/projetos", "/conhecimento"];
+  const MORE_CHILDREN = ["/projetos", "/conhecimento", "/tags"];
   const activeTab = MORE_CHILDREN.includes(path) ? "/mais" : path;
   document.querySelectorAll(".tab[data-route]").forEach((tab) => {
     tab.classList.toggle("active", tab.dataset.route === activeTab);
