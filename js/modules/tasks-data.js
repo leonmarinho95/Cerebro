@@ -10,12 +10,12 @@
 
 import {
   addDoc, updateDoc, deleteDoc, query, where, onSnapshot, serverTimestamp,
-  writeBatch,
+  writeBatch, Timestamp,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 import { db } from "../firebase.js";
 import { userCol, userDoc, normalizeSearch } from "../lib/util.js";
-import { addDays, todayKey } from "../lib/dates.js";
+import { addDays, todayKey, fromDayKey } from "../lib/dates.js";
 
 // Observa todas as tarefas não-arquivadas em tempo real.
 // Traz abertas e concluídas (a UI separa); exclui apenas arquivadas.
@@ -40,7 +40,7 @@ export function watchProjectTasks(uid, projectId, callback) {
 
 // Cria uma tarefa. dueDate opcional ('YYYY-MM-DD' ou null).
 // projectId opcional (usado a partir da fatia de Projetos).
-export function createTask(uid, { title, dueDate = null, projectId = null, tags = [] }) {
+export function createTask(uid, { title, dueDate = null, projectId = null, tags = [], checklist = [] }) {
   return addDoc(userCol(uid, "tasks"), {
     title: title.trim(),
     description: "",
@@ -50,7 +50,7 @@ export function createTask(uid, { title, dueDate = null, projectId = null, tags 
     status: "open",
     recurrence: null,     // reservado
     projectId,
-    checklist: [],        // reservado
+    checklist,
     tags,
     links: [],            // reservado (Fase 3)
     // order: posição manual dentro de um projeto. Inicia com o tempo atual
@@ -76,6 +76,28 @@ export function setTaskDone(uid, id, done) {
   return updateDoc(userDoc(uid, "tasks", id), {
     status: done ? "done" : "open",
     completedAt: done ? serverTimestamp() : null,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+// Conclui uma tarefa registrando a conclusão numa data específica (dayKey).
+// Útil quando o usuário esqueceu de marcar no dia certo. completedAt recebe
+// meio-dia daquela data (evita ambiguidade de fuso perto da meia-noite).
+export function setTaskDoneOnDate(uid, id, dayKey) {
+  const d = fromDayKey(dayKey);
+  d.setHours(12, 0, 0, 0);
+  return updateDoc(userDoc(uid, "tasks", id), {
+    status: "done",
+    completedAt: Timestamp.fromDate(d),
+    updatedAt: serverTimestamp(),
+  });
+}
+
+// Atualiza a lista interna (checklist) de uma tarefa.
+// items: array de { text, done }.
+export function updateChecklist(uid, id, items) {
+  return updateDoc(userDoc(uid, "tasks", id), {
+    checklist: items,
     updatedAt: serverTimestamp(),
   });
 }

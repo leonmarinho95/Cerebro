@@ -4,7 +4,7 @@
 
 import {
   watchTasks, createTask, updateTask, setTaskDone, snoozeTask,
-  archiveTask, deleteTask, archiveTasksBatch,
+  archiveTask, deleteTask, archiveTasksBatch, setTaskDoneOnDate, updateChecklist,
 } from "./tasks-data.js";
 import { watchProjects } from "./projects-data.js";
 import { groupTasks, taskDateState } from "./tasks-logic.js";
@@ -154,6 +154,27 @@ function renderList(listEl, subEl, uid, groups, projectMap = {}) {
       e.stopPropagation();
       snoozeTask(uid, task).then(() => toast("Adiada para amanhã")).catch(() => toast("Erro"));
     });
+
+    // Checklist inline: expandir/recolher
+    const clToggle = row.querySelector(".task-cl-summary");
+    if (clToggle) clToggle.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const items = row.querySelector(".task-cl-items");
+      const open = items.style.display !== "none";
+      items.style.display = open ? "none" : "block";
+      clToggle.querySelector(".cl-caret").classList.toggle("open", !open);
+    });
+    // Marcar item do checklist inline (salva no Firestore)
+    row.querySelectorAll(".checklist-box[data-cl-check]").forEach((box) => {
+      box.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const i = +box.dataset.i;
+        const items = (task.checklist || []).map((it) => ({ text: it.text, done: !!it.done }));
+        if (!items[i]) return;
+        items[i].done = !items[i].done;
+        updateChecklist(uid, id, items).catch(() => toast("Erro"));
+      });
+    });
   });
 }
 
@@ -177,16 +198,40 @@ function taskRow(t, projectMap = {}) {
     ? `<button class="task-snooze" aria-label="Adiar para amanhã">${icons.snooze}</button>`
     : "";
 
+  // Checklist (lista interna): resumo tocável que expande os itens.
+  const cl = t.checklist || [];
+  let checklistHtml = "";
+  if (cl.length) {
+    const doneCount = cl.filter((i) => i.done).length;
+    checklistHtml = `
+      <div class="task-checklist" data-cl-id="${t.id}">
+        <button class="task-cl-summary" data-cl-toggle="${t.id}">
+          ${icons.checkSmall}<span>${doneCount}/${cl.length} subitens</span>
+          <span class="cl-caret">${icons.chevronDown}</span>
+        </button>
+        <div class="task-cl-items" data-cl-items="${t.id}" style="display:none">
+          ${cl.map((it, i) => `
+            <label class="task-cl-item">
+              <button class="checklist-box sm ${it.done ? "checked" : ""}" data-cl-check="${t.id}" data-i="${i}" aria-label="Marcar">${it.done ? icons.checkSmall : ""}</button>
+              <span class="${it.done ? "cl-done" : ""}">${escapeHtml(it.text)}</span>
+            </label>`).join("")}
+        </div>
+      </div>`;
+  }
+
   return `
     <div class="task-row ${done ? "is-done" : `state-${state}`}" data-id="${t.id}">
-      <button class="task-check ${done ? "checked" : ""}" aria-label="${done ? "Reabrir" : "Concluir"}">
-        ${icons.checkSmall}
-      </button>
-      <div class="task-main">
-        <div class="task-title">${escapeHtml(t.title)}</div>
-        ${meta.length ? `<div class="task-meta">${meta.join("")}</div>` : ""}
+      <div class="task-row-head">
+        <button class="task-check ${done ? "checked" : ""}" aria-label="${done ? "Reabrir" : "Concluir"}">
+          ${icons.checkSmall}
+        </button>
+        <div class="task-main">
+          <div class="task-title">${escapeHtml(t.title)}</div>
+          ${meta.length ? `<div class="task-meta">${meta.join("")}</div>` : ""}
+        </div>
+        ${snoozeBtn}
       </div>
-      ${snoozeBtn}
+      ${checklistHtml}
     </div>`;
 }
 
@@ -195,8 +240,11 @@ function openTaskForm(uid, task = null) {
   const editing = !!task;
   const due = task?.dueDate || "";
   const tagsStr = (task?.tags || []).join(", ");
+  // Cópia local do checklist, editada no formulário e salva junto.
+  let checklist = (task?.checklist || []).map((it) => ({ text: it.text, done: !!it.done }));
+  const hasChecklist = checklist.length > 0;
 
-  const { close } = openModal(`
+  const { close, overlay } = openModal(`
     <h2 class="modal-title">${editing ? "Editar tarefa" : "Nova tarefa"}</h2>
     <label class="field">
       <span class="field-label">Título</span>
@@ -215,6 +263,30 @@ function openTaskForm(uid, task = null) {
       <span class="field-label">Tags (separadas por vírgula)</span>
       <input id="t-tags" type="text" placeholder="carro, casa" value="${escapeHtml(tagsStr)}" />
     </label>
+
+    <div class="field">
+      <div id="t-checklist-wrap" style="display:${hasChecklist ? "block" : "none"}">
+        <span class="field-label">Subitens</span>
+        <div id="t-checklist" class="checklist-edit"></div>
+        <div class="checklist-add-row">
+          <input id="t-check-new" type="text" placeholder="Adicionar item…" />
+          <button type="button" class="btn-ghost" id="t-check-add">Adicionar</button>
+        </div>
+      </div>
+      <button type="button" class="link-btn" id="t-checklist-toggle" style="display:${hasChecklist ? "none" : "inline-flex"}">
+        ${icons.plus} Adicionar subitens
+      </button>
+    </div>
+
+    ${editing ? `
+    <div class="field">
+      <button type="button" class="link-btn" id="t-done-other">${icons.checkSmall} Concluir em outra data…</button>
+      <div id="t-done-other-row" class="checklist-add-row" style="display:none">
+        <input id="t-done-date" type="date" value="${todayKey()}" />
+        <button type="button" class="btn-primary" id="t-done-confirm">Concluir</button>
+      </div>
+    </div>` : ""}
+
     <div class="modal-actions">
       ${editing ? '<button class="btn-ghost" id="t-delete">Excluir</button>' : "<span></span>"}
       <div style="display:flex;gap:8px">
@@ -224,30 +296,92 @@ function openTaskForm(uid, task = null) {
     </div>
   `);
 
-  const titleEl = document.getElementById("t-title");
-  const dueEl = document.getElementById("t-due");
-  document.getElementById("t-today").addEventListener("click", () => { dueEl.value = todayKey(); });
-  document.getElementById("t-tomorrow").addEventListener("click", () => {
+  const titleEl = overlay.querySelector("#t-title");
+  const dueEl = overlay.querySelector("#t-due");
+  overlay.querySelector("#t-today").addEventListener("click", () => { dueEl.value = todayKey(); });
+  overlay.querySelector("#t-tomorrow").addEventListener("click", () => {
     const d = new Date(); d.setDate(d.getDate() + 1);
     dueEl.value = d.toISOString().slice(0, 10);
   });
-  document.getElementById("t-clear").addEventListener("click", () => { dueEl.value = ""; });
+  overlay.querySelector("#t-clear").addEventListener("click", () => { dueEl.value = ""; });
 
-  document.getElementById("t-cancel").addEventListener("click", close);
-  document.getElementById("t-save").addEventListener("click", async () => {
+  // ----- Checklist (lista interna) -----
+  const wrapEl = overlay.querySelector("#t-checklist-wrap");
+  const listEl = overlay.querySelector("#t-checklist");
+  const toggleEl = overlay.querySelector("#t-checklist-toggle");
+  const newEl = overlay.querySelector("#t-check-new");
+
+  function renderChecklist() {
+    listEl.innerHTML = checklist.map((it, i) => `
+      <div class="checklist-edit-item">
+        <button type="button" class="checklist-box ${it.done ? "checked" : ""}" data-i="${i}" aria-label="Marcar">${it.done ? icons.checkSmall : ""}</button>
+        <input class="checklist-text ${it.done ? "done" : ""}" data-i="${i}" type="text" value="${escapeHtml(it.text)}" />
+        <button type="button" class="checklist-del" data-i="${i}" aria-label="Remover">${icons.close}</button>
+      </div>`).join("");
+    listEl.querySelectorAll(".checklist-box").forEach((b) => b.addEventListener("click", () => {
+      const i = +b.dataset.i; checklist[i].done = !checklist[i].done; renderChecklist();
+    }));
+    listEl.querySelectorAll(".checklist-text").forEach((inp) => inp.addEventListener("input", () => {
+      checklist[+inp.dataset.i].text = inp.value;
+    }));
+    listEl.querySelectorAll(".checklist-del").forEach((d) => d.addEventListener("click", () => {
+      checklist.splice(+d.dataset.i, 1); renderChecklist();
+    }));
+  }
+  function addItem() {
+    const t = newEl.value.trim();
+    if (!t) return;
+    checklist.push({ text: t, done: false });
+    newEl.value = "";
+    renderChecklist();
+    newEl.focus();
+  }
+  if (toggleEl) toggleEl.addEventListener("click", () => {
+    wrapEl.style.display = "block";
+    toggleEl.style.display = "none";
+    newEl.focus();
+  });
+  overlay.querySelector("#t-check-add")?.addEventListener("click", addItem);
+  newEl?.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); addItem(); } });
+  renderChecklist();
+
+  // ----- Concluir em outra data (só edição) -----
+  if (editing) {
+    const otherToggle = overlay.querySelector("#t-done-other");
+    const otherRow = overlay.querySelector("#t-done-other-row");
+    otherToggle.addEventListener("click", () => {
+      const showing = otherRow.style.display !== "none";
+      otherRow.style.display = showing ? "none" : "flex";
+    });
+    overlay.querySelector("#t-done-confirm").addEventListener("click", async () => {
+      const day = overlay.querySelector("#t-done-date").value;
+      if (!day) { toast("Escolha uma data"); return; }
+      try {
+        // Salva primeiro o checklist/edições pendentes, depois conclui na data.
+        await setTaskDoneOnDate(uid, task.id, day);
+        toast("Concluída em " + day.split("-").reverse().join("/"));
+        close();
+      } catch (err) { console.error(err); toast("Erro ao concluir"); }
+    });
+  }
+
+  overlay.querySelector("#t-cancel").addEventListener("click", close);
+  overlay.querySelector("#t-save").addEventListener("click", async () => {
     const title = titleEl.value.trim();
     if (!title) { titleEl.focus(); toast("Dê um título à tarefa"); return; }
     const dueDate = dueEl.value || null;
-    const tags = parseTags(document.getElementById("t-tags").value);
+    const tags = parseTags(overlay.querySelector("#t-tags").value);
+    // Remove itens de checklist vazios antes de salvar.
+    const cleanChecklist = checklist.filter((it) => it.text.trim()).map((it) => ({ text: it.text.trim(), done: it.done }));
     try {
-      if (editing) { await updateTask(uid, task.id, { title, dueDate, tags }); toast("Tarefa atualizada"); }
-      else { await createTask(uid, { title, dueDate, tags }); toast("Tarefa criada"); }
+      if (editing) { await updateTask(uid, task.id, { title, dueDate, tags, checklist: cleanChecklist }); toast("Tarefa atualizada"); }
+      else { await createTask(uid, { title, dueDate, tags, checklist: cleanChecklist }); toast("Tarefa criada"); }
       close();
     } catch (err) { console.error(err); toast("Erro ao salvar"); }
   });
 
   if (editing) {
-    document.getElementById("t-delete").addEventListener("click", async () => {
+    overlay.querySelector("#t-delete").addEventListener("click", async () => {
       const ok = await confirmModal(`Excluir “${escapeHtml(task.title)}”?`, { okLabel: "Excluir", danger: true });
       if (!ok) return;
       try { await deleteTask(uid, task.id); toast("Tarefa excluída"); close(); }

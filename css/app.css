@@ -869,3 +869,57 @@ input[type="date"] { color-scheme: dark; }
   flex: 1; min-width: 0; font-size: 0.92rem;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+
+/* ============================================================
+   Checklist (lista interna de tarefas)
+   ============================================================ */
+/* Botão de link discreto (adicionar subitens / concluir em outra data) */
+.link-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  color: var(--accent); font-size: 0.88rem; font-weight: 600;
+  padding: 4px 0;
+}
+.link-btn svg { width: 16px; height: 16px; }
+.link-btn:active { transform: scale(0.97); }
+
+/* Edição do checklist no formulário */
+.checklist-edit { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+.checklist-edit-item { display: flex; align-items: center; gap: 8px; }
+.checklist-box {
+  flex: 0 0 22px; width: 22px; height: 22px;
+  border: 2px solid var(--text-mute); border-radius: 6px;
+  display: grid; place-items: center; color: #14202b;
+}
+.checklist-box svg { width: 13px; height: 13px; stroke-width: 3; }
+.checklist-box.checked { background: var(--done); border-color: var(--done); }
+.checklist-box.sm { flex-basis: 20px; width: 20px; height: 20px; }
+.checklist-text {
+  flex: 1; background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 8px 10px; color: var(--text);
+}
+.checklist-text.done { text-decoration: line-through; color: var(--text-mute); }
+.checklist-del {
+  flex: 0 0 30px; width: 30px; height: 30px;
+  display: grid; place-items: center; color: var(--text-mute); border-radius: 6px;
+}
+.checklist-del svg { width: 16px; height: 16px; }
+.checklist-del:hover { background: var(--surface-2); color: var(--late); }
+.checklist-add-row { display: flex; gap: 8px; align-items: center; }
+.checklist-add-row input {
+  flex: 1; background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 9px 10px; color: var(--text);
+}
+
+/* Checklist exibido na linha da tarefa */
+.task-row-head { display: flex; align-items: center; gap: 12px; }
+.task-checklist { margin-top: 8px; padding-left: 36px; }
+.task-cl-summary {
+  display: inline-flex; align-items: center; gap: 6px;
+  color: var(--text-soft); font-size: 0.82rem; font-weight: 600;
+}
+.task-cl-summary svg { width: 14px; height: 14px; color: var(--text-mute); }
+.cl-caret { display: inline-grid; place-items: center; transition: transform 0.2s; }
+.cl-caret.open { transform: rotate(180deg); }
+.task-cl-items { display: flex; flex-direction: column; gap: 5px; margin-top: 8px; }
+.task-cl-item { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: var(--text-soft); }
+.task-cl-item .cl-done { text-decoration: line-through; color: var(--text-mute); }
