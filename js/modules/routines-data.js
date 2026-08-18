@@ -5,9 +5,10 @@
 
 import {
   addDoc, updateDoc, deleteDoc, getDocs, query, where, limit,
-  onSnapshot, serverTimestamp, orderBy,
+  onSnapshot, serverTimestamp, orderBy, writeBatch,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+import { db } from "../firebase.js";
 import { userCol, userDoc, userSubCol, normalizeSearch } from "../lib/util.js";
 import { todayKey } from "../lib/dates.js";
 
@@ -21,8 +22,21 @@ export function watchRoutines(uid, callback) {
   });
 }
 
+// Observa as rotinas ativas de um projeto específico.
+export function watchProjectRoutines(uid, projectId, callback) {
+  const q = query(
+    userCol(uid, "routines"),
+    where("active", "==", true),
+    where("projectId", "==", projectId)
+  );
+  return onSnapshot(q, (snap) => {
+    callback(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+  });
+}
+
 // Cria uma rotina nova. lastDoneDate começa null (devida hoje).
-export function createRoutine(uid, { name, frequency, color = "#5a9bd4", tags = [] }) {
+// projectId opcional: vincula a rotina a um projeto.
+export function createRoutine(uid, { name, frequency, color = "#5a9bd4", tags = [], projectId = null }) {
   return addDoc(userCol(uid, "routines"), {
     name: name.trim(),
     frequency,                 // { unit, n }
@@ -32,6 +46,7 @@ export function createRoutine(uid, { name, frequency, color = "#5a9bd4", tags = 
     target: null,
     color,
     tags,
+    projectId,                 // vínculo opcional a um projeto
     active: true,
     links: [],                 // reservado (Fase 3)
     searchText: normalizeSearch(name, ...tags),
@@ -54,6 +69,21 @@ export function archiveRoutine(uid, id) {
     active: false,
     updatedAt: serverTimestamp(),
   });
+}
+
+// Arquiva todas as rotinas ativas de um projeto (usado ao concluir o projeto).
+// Retorna quantas foram arquivadas.
+export async function archiveRoutinesByProject(uid, projectId) {
+  const snap = await getDocs(query(
+    userCol(uid, "routines"),
+    where("active", "==", true),
+    where("projectId", "==", projectId)
+  ));
+  if (snap.empty) return 0;
+  const batch = writeBatch(db);
+  snap.docs.forEach((d) => batch.update(d.ref, { active: false, updatedAt: serverTimestamp() }));
+  await batch.commit();
+  return snap.size;
 }
 
 // Apaga em definitivo a rotina (entries ficam órfãs e somem com a rotina na UI).

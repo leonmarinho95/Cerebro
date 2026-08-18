@@ -14,6 +14,7 @@ import { openModal, toast, confirmModal } from "../lib/ui.js";
 import { escapeHtml } from "../lib/util.js";
 import { todayKey, relativeDayLabel } from "../lib/dates.js";
 import { icons } from "../lib/icons.js";
+import { listActiveProjects, watchProjects } from "./projects-data.js";
 
 const COLORS = ["#5a9bd4", "#4fb286", "#f0a830", "#e0604d", "#9b87d4", "#d47fa6"];
 
@@ -36,20 +37,29 @@ export function renderRoutines(container, ctx) {
   const listEl = document.getElementById("routines-list");
   const subEl = document.getElementById("routines-sub");
 
-  // Listener em tempo real. O cleanup (return) é chamado pelo roteador ao sair.
-  const unsub = watchRoutines(uid, (routines) => {
+  // Estado: rotinas + mapa de projetos (para o selo de projeto na linha).
+  const state = { routines: null, projectMap: {} };
+  function paint() {
+    if (state.routines === null) return;
     const today = todayKey();
-    routines.forEach((r) => {
-      r._status = routineStatus(r.frequency, r.lastDoneDate, today);
-    });
+    const routines = state.routines;
+    routines.forEach((r) => { r._status = routineStatus(r.frequency, r.lastDoneDate, today); });
     routines.sort(compareRoutines);
-    renderList(listEl, subEl, uid, routines, today);
+    renderList(listEl, subEl, uid, routines, today, state.projectMap);
+  }
+
+  const unsub = watchRoutines(uid, (routines) => { state.routines = routines; paint(); });
+  const unsubP = watchProjects(uid, (projects) => {
+    const map = {};
+    projects.forEach((p) => { map[p.id] = { name: p.name, color: p.color }; });
+    state.projectMap = map;
+    paint();
   });
 
-  return unsub;
+  return () => { unsub(); unsubP(); };
 }
 
-function renderList(listEl, subEl, uid, routines, today) {
+function renderList(listEl, subEl, uid, routines, today, projectMap = {}) {
   if (routines.length === 0) {
     subEl.textContent = "";
     listEl.innerHTML = `
@@ -67,7 +77,7 @@ function renderList(listEl, subEl, uid, routines, today) {
   if (overdue) parts.push(`${overdue} atrasada${overdue > 1 ? "s" : ""}`);
   subEl.textContent = parts.length ? parts.join(" · ") : "tudo em dia";
 
-  listEl.innerHTML = routines.map((r) => routineRow(r, today)).join("");
+  listEl.innerHTML = routines.map((r) => routineRow(r, today, projectMap)).join("");
 
   // Liga ações de cada linha
   routines.forEach((r) => {
@@ -83,13 +93,15 @@ function renderList(listEl, subEl, uid, routines, today) {
   });
 }
 
-function routineRow(r, today) {
+function routineRow(r, today, projectMap = {}) {
   const st = r._status;
   const doneToday = r.lastDoneDate === today;
-  const streak = dailyStreak(r.frequency, doneToday ? [today] : [], today);
-  // streak completo seria carregado sob demanda; aqui mostramos só se feita hoje
   const stateClass = doneToday ? "done" : st.state; // done | due | overdue | upcoming
   const badge = doneToday ? "feita hoje" : statusLabel(st);
+  const proj = r.projectId ? projectMap[r.projectId] : null;
+  const projSel = proj
+    ? `<span class="sep">·</span><span class="task-proj"><span class="task-proj-dot" style="background:${proj.color}"></span>${escapeHtml(proj.name)}</span>`
+    : "";
 
   return `
     <div class="routine-row state-${stateClass}" data-id="${r.id}">
@@ -103,6 +115,7 @@ function routineRow(r, today) {
           ${frequencyLabel(r.frequency)}
           <span class="sep">·</span>
           <span class="routine-badge">${badge}</span>
+          ${projSel}
         </div>
       </div>
     </div>`;
@@ -162,6 +175,13 @@ function openRoutineForm(uid, routine = null) {
       </div>
     </div>
 
+    <label class="field">
+      <span class="field-label">Projeto (opcional)</span>
+      <select id="r-project">
+        <option value="">Sem projeto</option>
+      </select>
+    </label>
+
     <div class="modal-actions">
       ${editing ? '<button class="btn-ghost" id="r-archive">Arquivar</button>' : '<span></span>'}
       <div style="display:flex;gap:8px">
@@ -194,17 +214,30 @@ function openRoutineForm(uid, routine = null) {
 
   document.getElementById("r-cancel").addEventListener("click", close);
 
+  // Popula o seletor de projetos (leitura pontual) e pré-seleciona o atual.
+  const projectEl = document.getElementById("r-project");
+  listActiveProjects(uid).then((projects) => {
+    projects.forEach((p) => {
+      const opt = document.createElement("option");
+      opt.value = p.id;
+      opt.textContent = p.name;
+      projectEl.appendChild(opt);
+    });
+    if (editing && routine.projectId) projectEl.value = routine.projectId;
+  }).catch((err) => console.error("Falha ao listar projetos:", err));
+
   document.getElementById("r-save").addEventListener("click", async () => {
     const name = nameEl.value.trim();
     if (!name) { nameEl.focus(); toast("Dê um nome à rotina"); return; }
     const n = Math.max(1, parseInt(nEl.value || "1", 10));
     const frequency = { unit: unitEl.value, n };
+    const projectId = projectEl.value || null;
     try {
       if (editing) {
-        await updateRoutine(uid, routine.id, { name, frequency, color: chosen });
+        await updateRoutine(uid, routine.id, { name, frequency, color: chosen, projectId });
         toast("Rotina atualizada");
       } else {
-        await createRoutine(uid, { name, frequency, color: chosen });
+        await createRoutine(uid, { name, frequency, color: chosen, projectId });
         toast("Rotina criada");
       }
       close();

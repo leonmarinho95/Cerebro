@@ -12,6 +12,8 @@ import {
   updateTask, snoozeTask, deleteTask, swapTaskOrder,
 } from "./tasks-data.js";
 import { taskDateState } from "./tasks-logic.js";
+import { watchProjectRoutines, archiveRoutinesByProject } from "./routines-data.js";
+import { routineStatus, statusLabel, frequencyLabel } from "./routines-logic.js";
 import { openModal, toast, confirmModal } from "../lib/ui.js";
 import { escapeHtml, parseTags } from "../lib/util.js";
 import { relativeDayLabel, todayKey } from "../lib/dates.js";
@@ -153,7 +155,8 @@ function openProjectForm(uid, project = null) {
 
 // ---- Detalhe do projeto ----
 function openProjectDetail(uid, project) {
-  let unsub = null; // listener das tarefas do projeto; encerrado no onClose
+  let unsub = null;       // listener das tarefas do projeto
+  let unsubRoutines = null; // listener das rotinas do projeto
 
   const { close, overlay } = openModal(`
     <div class="detail-head">
@@ -169,24 +172,55 @@ function openProjectDetail(uid, project) {
     </div>
     <div id="pd-tasks"><p class="empty">Carregando…</p></div>
 
+    <div id="pd-routines-section" style="display:none">
+      <h3 class="detail-section">Rotinas</h3>
+      <div id="pd-routines"></div>
+    </div>
+
     <div class="modal-actions">
       <button class="btn-ghost" id="pd-toggle">${project.status === "done" ? "Reabrir projeto" : "Concluir projeto"}</button>
       <button class="btn-primary" id="pd-close">Fechar</button>
     </div>
-  `, { onClose: () => { if (unsub) unsub(); } });
+  `, { onClose: () => { if (unsub) unsub(); if (unsubRoutines) unsubRoutines(); } });
 
   const tasksEl = overlay.querySelector("#pd-tasks");
   const progEl = overlay.querySelector("#pd-progress");
+  const routinesSection = overlay.querySelector("#pd-routines-section");
+  const routinesEl = overlay.querySelector("#pd-routines");
 
   overlay.querySelector("#pd-close").addEventListener("click", close);
   overlay.querySelector("#pd-edit").addEventListener("click", () => { close(); openProjectForm(uid, project); });
   overlay.querySelector("#pd-add").addEventListener("click", () => openInlineTaskForm(uid, project.id));
   overlay.querySelector("#pd-toggle").addEventListener("click", async () => {
+    const concluding = project.status !== "done";
     try {
-      await setProjectDone(uid, project.id, project.status !== "done");
-      toast(project.status === "done" ? "Projeto reaberto" : "Projeto concluído ✓");
+      await setProjectDone(uid, project.id, concluding);
+      // Ao concluir, arquiva em cascata as rotinas vinculadas.
+      if (concluding) {
+        const n = await archiveRoutinesByProject(uid, project.id);
+        toast(n > 0 ? `Projeto concluído ✓ · ${n} rotina${n > 1 ? "s" : ""} arquivada${n > 1 ? "s" : ""}` : "Projeto concluído ✓");
+      } else {
+        toast("Projeto reaberto");
+      }
       close();
     } catch (err) { console.error(err); toast("Erro"); }
+  });
+
+  // Listener das rotinas vinculadas ao projeto.
+  unsubRoutines = watchProjectRoutines(uid, project.id, (routines) => {
+    if (!routines.length) { routinesSection.style.display = "none"; routinesEl.innerHTML = ""; return; }
+    routinesSection.style.display = "block";
+    const today = todayKey();
+    routinesEl.innerHTML = routines.map((r) => {
+      const st = routineStatus(r.frequency, r.lastDoneDate, today);
+      const doneToday = r.lastDoneDate === today;
+      return `
+        <div class="pd-routine">
+          <span class="dot" style="background:${r.color}"></span>
+          <span class="pd-routine-name">${escapeHtml(r.name)}</span>
+          <span class="pd-routine-badge ${doneToday ? "done" : st.state}">${doneToday ? "feita hoje" : statusLabel(st)}</span>
+        </div>`;
+    }).join("");
   });
 
   // Listener em tempo real das tarefas do projeto (progresso + lista).

@@ -923,3 +923,18 @@ input[type="date"] { color-scheme: dark; }
 .task-cl-items { display: flex; flex-direction: column; gap: 5px; margin-top: 8px; }
 .task-cl-item { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: var(--text-soft); }
 .task-cl-item .cl-done { text-decoration: line-through; color: var(--text-mute); }
+
+/* ============================================================
+   Rotinas vinculadas no detalhe do projeto
+   ============================================================ */
+.pd-routine {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--surface-2);
+  border-radius: 8px; padding: 9px 12px; margin-bottom: 6px;
+}
+.pd-routine .dot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 8px; }
+.pd-routine-name { flex: 1; min-width: 0; font-size: 0.92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pd-routine-badge { font-size: 0.78rem; font-weight: 600; color: var(--text-soft); white-space: nowrap; }
+.pd-routine-badge.overdue { color: var(--late); }
+.pd-routine-badge.due { color: var(--due); }
+.pd-routine-badge.done { color: var(--done); }

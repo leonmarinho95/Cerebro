@@ -26,6 +26,12 @@ export function watchProjects(uid, callback) {
   });
 }
 
+// Leitura pontual dos projetos ativos (para seletores em formulários).
+export async function listActiveProjects(uid) {
+  const snap = await getDocs(query(userCol(uid, "projects"), where("status", "==", "active")));
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
 export function createProject(uid, { name, description = "", color = PROJECT_COLORS[0], tags = [] }) {
   return addDoc(userCol(uid, "projects"), {
     name: name.trim(),
